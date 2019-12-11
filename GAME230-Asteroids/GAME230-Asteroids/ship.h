@@ -10,9 +10,9 @@
 
 using namespace sf;
 
-class Asteroid {
+class Ship {
 public:
-	Asteroid(Vector2f position, Vector2f velocity, float radius);
+	Ship(Vector2f position, Vector2f velocity, Vector2f size);
 	void draw(RenderWindow* window);
 	void update(int dt_ms, int windowWidth, int windowHeight);
 	Vector2f getPosition();
@@ -22,6 +22,7 @@ public:
 private:
 	Vector2f velocity;
 	Vector2f position;
-	CircleShape shape;
-	float radius;
+	RectangleShape shape;
+	Vector2f size;
+	float angle;
 };
