@@ -6,14 +6,20 @@
 #include <SFML/OpenGL.hpp>
 #include <SFML/Main.hpp>
 
+#include<iostream>
+
 #include "asteroid.h"
 #include "ship.h"
+#include "bullet.h"
 
 using namespace std;
 using namespace sf;
 
 const int WINDOW_WIDTH = 1024;
 const int WINDOW_HEIGHT = 1024;
+
+const int maxBullets = 50;
+const int numAsteroids = 10;
 
 const float PI = 3.1415926535;
 
@@ -40,6 +46,18 @@ bool circlesCollided(Vector2f position1, Vector2f position2, float radius1, floa
 
 int main() {
 
+	Texture shipTexture;
+	if (!shipTexture.loadFromFile("ship_texture.png")) {
+		exit(-1);
+	}
+	shipTexture.setSmooth(true);
+
+	Texture asteroidTexture;
+	if (!asteroidTexture.loadFromFile("asteroid_texture.jpg")) {
+		exit(-1);
+	}
+	asteroidTexture.setSmooth(true);
+
 	// timing
 	int dt_ms = 0;
 	Clock clock;
@@ -48,22 +66,26 @@ int main() {
 	bool left = false;
 	bool right = false;
 	bool up = false;
-	bool space = true;
+	bool space = false;
 
 	// state
 	int state = GAMEPLAY;
 
-	Ship ship = Ship(Vector2f(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f), Vector2f(0, 0), 20);
+	Ship ship = Ship(Vector2f(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f), Vector2f(0, 0), 20, &shipTexture);
 
 	int asteroidSpeedReduction = 5; // slowdown for initial speed
-	int numAsteroids = 10; // how many asteroids to have
-	int activeAsteroids = 0; // how many are currently active
 	vector<Asteroid> asteroids;
 	for (int i = 0; i < numAsteroids; i++) {
 		Vector2f position = Vector2f(((float)rand() / (RAND_MAX)) * WINDOW_WIDTH, ((float)rand() / (RAND_MAX) * WINDOW_HEIGHT));
 		Vector2f velocity = Vector2f(((float)rand() / (RAND_MAX)) / asteroidSpeedReduction, ((float)rand() / (RAND_MAX)) / asteroidSpeedReduction);
-		asteroids.push_back(Asteroid(position, velocity, 30));
-		activeAsteroids++;
+		asteroids.push_back(Asteroid(position, velocity, 30, &asteroidTexture));
+	}
+
+	vector<Bullet> bullets;
+	for (int i = 0; i < maxBullets; i++) {
+		Bullet newBullet = Bullet(Vector2f(0, 0), Vector2f(0, 0));
+		newBullet.setActive(false);
+		bullets.push_back(newBullet);
 	}
 
 	RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Asteroids");
@@ -101,9 +123,6 @@ int main() {
 				else if (event.key.code == Keyboard::Key::Right) {
 					right = false;
 				}
-				else if (event.key.code == Keyboard::Key::Space) {
-					space = false;
-				}
 			}
 		}
 
@@ -112,17 +131,30 @@ int main() {
 		clock.restart();
 
 		if (state == GAMEPLAY) {
-
 			// UPDATE
 			ship.update(dt_ms, WINDOW_WIDTH, WINDOW_HEIGHT, left, right, up);
+
 			for (Asteroid& a : asteroids) {
 				a.update(dt_ms, WINDOW_WIDTH, WINDOW_HEIGHT);
 			}
 
+			for (int i = 0; i < bullets.size(); i++) {
+				if (space && !bullets[i].isActive()) { // bullet is inactive and we need one
+					space = false;
+					bullets[i].setPosition(ship.getPosition()); // TODO: center bullet
+					bullets[i].setDirection(ship.getDirection());
+					bullets[i].setActive(true);
+				}
+				
+				if (bullets[i].isActive()) { // bullet is active
+					bullets[i].update(dt_ms, WINDOW_WIDTH, WINDOW_HEIGHT);
+				}
+			}
+
 			// COLLISION
-			for (int i = 0; i < activeAsteroids; i++) {
+			for (int i = 0; i < asteroids.size(); i++) {
 				Asteroid* a = &asteroids[i];
-				for (int j = i + 1; j < activeAsteroids; j++) {
+				for (int j = i + 1; j < asteroids.size(); j++) {
 					Asteroid* b = &asteroids[j];
 					if (circlesCollided(a->getPosition(), b->getPosition(), a->getRadius(), b->getRadius())) {
 						// exchange velocities (generalization of 1d equal mass collision)
@@ -136,14 +168,29 @@ int main() {
 					a->setColor(Color::Red);
 					// TODO: kill player
 				}
+
+				for (int i = 0; i < bullets.size(); i++) {
+					if (bullets[i].isActive()) {
+						if (circlesCollided(a->getPosition(), bullets[i].getPosition(), a->getRadius(), bullets[i].getRadius())) {
+							bullets[i].setActive(false);
+							a->setColor(Color::Blue);
+							// TODO: split asteroid
+						}
+					}
+				}
 			}
 
 			window.clear();
 
 			// DRAW
 			ship.draw(&window);
-			for (Asteroid& a : asteroids) {
-				a.draw(&window);
+			for (int i = 0; i < asteroids.size(); i++) {
+				asteroids[i].draw(&window);
+			}
+			for (int i = 0; i < bullets.size(); i++) {
+				if (bullets[i].isActive()) {
+					bullets[i].draw(&window);
+				}
 			}
 
 		}

@@ -1,12 +1,13 @@
 #include "asteroid.h"
 
-Asteroid::Asteroid(Vector2f position, Vector2f velocity, float radius) {
+Asteroid::Asteroid(Vector2f position, Vector2f velocity, float radius, Texture* texture) {
 	this->position = position;
 	this->velocity = velocity;
 	this->radius = radius;
 
 	this->shape = CircleShape(this->radius, 100);
 	this->shape.setFillColor(Color::White);
+	this->shape.setTexture(texture);
 }
 
 void Asteroid::draw(RenderWindow* window) {

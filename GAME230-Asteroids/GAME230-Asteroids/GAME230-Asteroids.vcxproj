@@ -150,11 +150,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="asteroid.cpp" />
+    <ClCompile Include="bullet.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ship.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="asteroid.h" />
+    <ClInclude Include="bullet.h" />
+    <ClInclude Include="PowerUp.h" />
     <ClInclude Include="ship.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -10,19 +10,22 @@
 
 using namespace sf;
 
-class Asteroid {
+class Bullet {
 public:
-	Asteroid(Vector2f position, Vector2f velocity, float radius, Texture* texture);
-	void draw(RenderWindow* window);
+	Bullet(Vector2f position, Vector2f direction);
 	void update(int dt_ms, int windowWidth, int windowHeight);
+	void draw(RenderWindow* window);
+	void setActive(bool state);
+	bool isActive();
+	void setPosition(Vector2f newpos);
+	void setDirection(Vector2f newdir);
 	Vector2f getPosition();
 	float getRadius();
-	Vector2f getVelocity();
-	void setVelocity(Vector2f newvel);
-	void setColor(Color color);
 private:
-	Vector2f velocity;
 	Vector2f position;
+	Vector2f direction;
 	CircleShape shape;
 	float radius;
+	float speed;
+	bool active;
 };

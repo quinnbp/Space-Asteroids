@@ -2,7 +2,7 @@
 
 const float PI = 3.1415926535;
 
-Ship::Ship(Vector2f position, Vector2f velocity, int dimension) {
+Ship::Ship(Vector2f position, Vector2f velocity, int dimension, Texture* texture) {
 	// frame-updated traits for movement
 	this->position = position;
 	this->angle = 0.0f;
@@ -10,8 +10,8 @@ Ship::Ship(Vector2f position, Vector2f velocity, int dimension) {
 	this->direction = Vector2f(1, 0);
 
 	// tweakable traits governing min/max behavior of the ship
-	this->baseAcceleration = 0.1f;
-	this->maxSpeed = 2.0f;
+	this->baseAcceleration = 0.05f;
+	this->maxSpeed = 0.2f;
 
 	// collision parameters
 	this->collisionRadius = dimension / 2;
@@ -21,6 +21,7 @@ Ship::Ship(Vector2f position, Vector2f velocity, int dimension) {
 	this->shape = RectangleShape(this->size);
 	this->shape.setFillColor(Color::White);
 	this->shape.setOrigin(Vector2f(this->size.x / 2.0f, this->size.y / 2.0f));
+	this->shape.setTexture(texture);
 }
 
 void Ship::draw(RenderWindow* window) {
@@ -97,8 +98,8 @@ void Ship::updateSpeed(int dt_ms) {
 	Updates the current position based on the speed and direction
 */
 void Ship::updatePosition(int dt_ms, int windowWidth, int windowHeight) {
-	this->position.x += this->speed * this->direction.x;
-	this->position.y += this->speed * this->direction.y;
+	this->position.x += dt_ms * this->speed * this->direction.x;
+	this->position.y += dt_ms * this->speed * this->direction.y;
 
 	if (this->position.x > windowWidth) {
 		this->position.x = 0;
@@ -129,6 +130,10 @@ void Ship::setColor(Color color) {
 
 Vector2f Ship::getPosition() {
 	return this->position;
+}
+
+Vector2f Ship::getDirection() {
+	return this->direction;
 }
 
 float getRadius();

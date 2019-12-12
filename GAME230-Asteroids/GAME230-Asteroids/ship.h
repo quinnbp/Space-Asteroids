@@ -12,7 +12,7 @@ using namespace sf;
 
 class Ship {
 public:
-	Ship(Vector2f position, Vector2f velocity, int size);
+	Ship(Vector2f position, Vector2f velocity, int size, Texture* texture);
 	void draw(RenderWindow* window);
 	void update(int dt_ms, int windowWidth, int windowHeight, bool left, bool right, bool up);
 	Vector2f getPosition();
@@ -22,6 +22,7 @@ public:
 	void setAcceleration(float newacc);
 	float getCollisionRadius();
 	void setColor(Color color);
+	Vector2f getDirection();
 private:
 	RectangleShape shape;
 	Vector2f size;
