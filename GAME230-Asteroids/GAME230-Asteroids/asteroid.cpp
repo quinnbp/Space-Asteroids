@@ -53,3 +53,7 @@ Vector2f Asteroid::getVelocity() {
 void Asteroid::setVelocity(Vector2f newvel) {
 	this->velocity = newvel;
 }
+
+void Asteroid::setColor(Color color) {
+	this->shape.setFillColor(color);
+}

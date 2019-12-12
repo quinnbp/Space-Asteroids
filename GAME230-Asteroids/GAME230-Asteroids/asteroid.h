@@ -19,6 +19,7 @@ public:
 	float getRadius();
 	Vector2f getVelocity();
 	void setVelocity(Vector2f newvel);
+	void setColor(Color color);
 private:
 	Vector2f velocity;
 	Vector2f position;
