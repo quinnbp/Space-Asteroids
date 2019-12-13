@@ -1,4 +1,7 @@
 #include "asteroid.h"
+#include<iostream>
+
+using namespace std;
 
 Asteroid::Asteroid(Vector2f position, Vector2f velocity, float radius, Texture* texture) {
 	this->position = position;
@@ -9,6 +12,8 @@ Asteroid::Asteroid(Vector2f position, Vector2f velocity, float radius, Texture* 
 	this->shape = CircleShape(this->radius, 100);
 	this->shape.setFillColor(Color::White);
 	this->shape.setTexture(texture);
+
+	cout << "asteroid constructed" << endl;
 }
 
 void Asteroid::draw(RenderWindow* window) {
@@ -55,6 +60,7 @@ float Asteroid::getRadius() {
 void Asteroid::setRadius(float newrad) {
 	if (newrad > 0) {
 		this->radius = newrad;
+		this->shape.setRadius(newrad);
 	}
 }
 
