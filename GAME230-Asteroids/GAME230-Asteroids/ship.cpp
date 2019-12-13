@@ -22,12 +22,25 @@ Ship::Ship(Vector2f position, Vector2f velocity, int dimension, Texture* texture
 	this->shape.setFillColor(Color::White);
 	this->shape.setOrigin(Vector2f(this->size.x / 2.0f, this->size.y / 2.0f));
 	this->shape.setTexture(texture);
+
+	// shield
+	this->shield = false;
+	this->shieldCircle = CircleShape(dimension);
+	this->shieldCircle.setFillColor(Color::Transparent);
+	this->shieldCircle.setOutlineColor(Color::White);
+	this->shieldCircle.setOutlineThickness(3);
+	this->shieldCircle.setOrigin(Vector2f(dimension, dimension));
 }
 
 void Ship::draw(RenderWindow* window) {
 	this->shape.setPosition(Vector2f(this->position.x + this->size.x / 2.0f, this->position.y + this->size.y / 2.0f));
 	this->shape.setRotation(this->angle);
 	window->draw(this->shape);
+	
+	if (this->shield) {
+		this->shieldCircle.setPosition(this->shape.getPosition());
+		window->draw(this->shieldCircle);
+	}
 }
 
 /*
@@ -118,10 +131,6 @@ void Ship::updatePosition(int dt_ms, int windowWidth, int windowHeight) {
 	}
 }
 
-void Ship::loseLife() {
-
-}
-
 void Ship::setAcceleration(float newacc) {
 	this->acceleration = newacc;
 }
@@ -144,4 +153,20 @@ Vector2f Ship::getDirection() {
 
 void Ship::setPosition(Vector2f newpos) {
 	this->position = newpos;
+}
+
+void Ship::setShield(bool state) {
+	this->shield = state;
+}
+
+void Ship::setMultiShot(bool state) {
+	this->multiShot = state;
+}
+
+bool Ship::getShield() {
+	return this->shield;
+}
+
+bool Ship::getMultiShot() {
+	return this->multiShot;
 }

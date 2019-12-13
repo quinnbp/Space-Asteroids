@@ -47,3 +47,7 @@ Vector2f PowerUp::getPosition() {
 float PowerUp::getRadius() {
 	return this->radius;
 }
+
+int PowerUp::getType() {
+	return this->type;
+}

@@ -22,6 +22,7 @@ public:
 	float getRadius();
 	Vector2f getPosition();
 	void draw(RenderWindow* window);
+	int getType();
 private:
 	Vector2f position;
 	int type;

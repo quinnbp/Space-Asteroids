@@ -20,12 +20,19 @@ public:
 	float getCollisionRadius();
 	void setColor(Color color);
 	Vector2f getDirection();
-	void loseLife();
 	void setPosition(Vector2f newpos);
+	void setShield(bool state);
+	void setMultiShot(bool state);
+	bool getShield();
+	bool getMultiShot();
 private:
 	RectangleShape shape;
+	CircleShape shieldCircle;
 	Vector2f size;
 	float collisionRadius;
+
+	bool shield;
+	bool multiShot;
 
 	float angle;
 	float speed;
