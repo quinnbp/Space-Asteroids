@@ -73,9 +73,11 @@ void Ship::updateDirection() {
 void Ship::updateAcceleration(bool up) {
 	if (up) {
 		this->acceleration = this->baseAcceleration;
+		this->shape.setFillColor(Color::Red);
 	}
 	else {
 		this->acceleration = -1.0 * this->baseAcceleration;
+		this->shape.setFillColor(Color::White);
 	}
 }
 

@@ -21,10 +21,11 @@ const int WINDOW_HEIGHT = 1024;
 const int maxBullets = 50;
 const int numAsteroids = 10;
 const int asteroidStartRadius = 30;
+const int levelMultiplier = 10;
 
 const float PI = 3.1415926535;
 
-enum { MENU, GAMEPLAY, GAMEPREP, DEAD };
+enum { MENU, GAMEPLAY, DEAD };
 
 /*
 	Returns the pythagorean distance between two points
@@ -45,10 +46,49 @@ bool circlesCollided(Vector2f position1, Vector2f position2, float radius1, floa
 	}
 }
 
+vector<Asteroid*> prepAsteroids(int level, Texture* asteroidTexture) {
+	vector<Asteroid*> asteroids;
+	int numAsteroids = level * levelMultiplier;
+	int asteroidSpeedReduction = 6 - level;
+	if (asteroidSpeedReduction < 1) {
+		asteroidSpeedReduction = 1;
+	}
+	for (int i = 0; i < numAsteroids; i++) {
+		Vector2f position = Vector2f(((float)rand() / (RAND_MAX)) * WINDOW_WIDTH, ((float)rand() / (RAND_MAX)*WINDOW_HEIGHT));
+		Vector2f velocity = Vector2f(((float)rand() / (RAND_MAX)) / asteroidSpeedReduction, ((float)rand() / (RAND_MAX)) / asteroidSpeedReduction);
+		Asteroid* newAsteroid = new Asteroid(position, velocity, asteroidStartRadius, asteroidTexture);
+		newAsteroid->setActive(true);
+		asteroids.push_back(newAsteroid);
+	}
+	return asteroids;
+}
+
 int main() {
 
+	int currentLevel = 1;
 	int playerLives = 3;
 	int score = 0;
+
+	SoundBuffer thrustBuffer;
+	if (!thrustBuffer.loadFromFile("thrust1.wav")) {
+		exit(-1);
+	}
+	Sound sfx_thrust;
+	sfx_thrust.setBuffer(thrustBuffer);
+
+	SoundBuffer dieBuffer;
+	if (!dieBuffer.loadFromFile("thrust2.wav")) {
+		exit(-1);
+	}
+	Sound sfx_die;
+	sfx_die.setBuffer(dieBuffer);
+
+	SoundBuffer shootBuffer;
+	if (!shootBuffer.loadFromFile("shoot1.wav")) {
+		exit(-1);
+	}
+	Sound sfx_shoot;
+	sfx_shoot.setBuffer(shootBuffer);
 
 	Texture shipTexture;
 	if (!shipTexture.loadFromFile("ship_texture.png")) {
@@ -117,7 +157,7 @@ int main() {
 	Text gameOverText = titleText;
 	Text returnToMenuText = playText;
 	gameOverText.setString("game over");
-	returnToMenuText.setString("press space to \nreturn to menu");
+	returnToMenuText.setString("press esc to \nreturn to menu");
 
 	Text authorText;
 	authorText.setFont(spaceFont);
@@ -143,6 +183,8 @@ int main() {
 	// timing
 	int dt_ms = 0;
 	Clock clock;
+	int thrustSoundTimer = 0;
+	int doubleCollideTimer = 0;
 
 	// key booleans
 	bool left = false;
@@ -153,18 +195,9 @@ int main() {
 	// state
 	int state = MENU;
 
+	// game objects
 	Ship ship = Ship(Vector2f(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f), Vector2f(0, 0), 20, &shipTexture);
-
-	int asteroidSpeedReduction = 5; // slowdown for initial speed
-	vector<Asteroid*> asteroids;
-	for (int i = 0; i < numAsteroids; i++) {
-		Vector2f position = Vector2f(((float)rand() / (RAND_MAX)) * WINDOW_WIDTH, ((float)rand() / (RAND_MAX)*WINDOW_HEIGHT));
-		Vector2f velocity = Vector2f(((float)rand() / (RAND_MAX)) / asteroidSpeedReduction, ((float)rand() / (RAND_MAX)) / asteroidSpeedReduction);
-		Asteroid* newAsteroid;
-		newAsteroid = new Asteroid(position, velocity, asteroidStartRadius, &asteroidTexture);
-		newAsteroid->setActive(true);
-		asteroids.push_back(newAsteroid);
-	}
+	vector<Asteroid*> asteroids = prepAsteroids(currentLevel, &asteroidTexture);
 
 	vector<Bullet> bullets;
 	for (int i = 0; i < maxBullets; i++) {
@@ -173,9 +206,12 @@ int main() {
 		bullets.push_back(newBullet);
 	}
 
+	// window setup
 	RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Asteroids");
 	window.setVerticalSyncEnabled(true);
+	window.setKeyRepeatEnabled(false);
 
+	// GAME LOOP
 	while (window.isOpen())
 	{
 		sf::Event event;
@@ -197,6 +233,10 @@ int main() {
 				else if (event.key.code == Keyboard::Key::Space) {
 					space = true;
 				}
+				else if (event.key.code == Keyboard::Key::Escape) {
+					space = false;
+					state = MENU;
+				}
 			}
 			else if (event.type == Event::KeyReleased) {
 				if (event.key.code == Keyboard::Key::Up) {
@@ -216,7 +256,6 @@ int main() {
 		clock.restart();
 
 		window.clear();
-		
 
 		if (state == MENU) {
 			window.draw(menuBgImage);
@@ -225,13 +264,22 @@ int main() {
 			window.draw(playText);
 			window.draw(spaceText);
 			window.draw(authorText);
-			if (space) {
+
+			if (space) { // if starting game
 				space = false;
-				state = GAMEPREP;
+
+				// reset vars
+				playerLives = 3;
+				currentLevel = 1;
+				for (int i = 0; i < bullets.size(); i++) {
+					bullets[i].setActive(false);
+				}
+				ship.setPosition(Vector2f(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f));
+
+				// prep new asteroids and move to gameplay
+				asteroids = prepAsteroids(currentLevel, &asteroidTexture);
+				state = GAMEPLAY;
 			}
-		}
-		else if (state == GAMEPREP) {
-			state = GAMEPLAY;
 		}
 		else if (state == DEAD) {
 			window.draw(gameBgImage);
@@ -245,16 +293,18 @@ int main() {
 			window.draw(returnToMenuText);
 			window.draw(scoreText);
 			window.draw(scoreNumber);
-
-			if (space) {
-				space = false;
-				state = MENU;
-			}
 		}
 		else if (state == GAMEPLAY) {
 
 			// UPDATE
 			ship.update(dt_ms, WINDOW_WIDTH, WINDOW_HEIGHT, left, right, up);
+			if (up && thrustSoundTimer > 5) {
+				thrustSoundTimer = 0;
+				sfx_thrust.play();
+			}
+			else if (up) {
+				thrustSoundTimer++;
+			}
 
 			for (int i = 0; i < asteroids.size(); i++) {
 				asteroids[i]->update(dt_ms, WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -266,6 +316,7 @@ int main() {
 					bullets[i].setPosition(ship.getPosition()); // TODO: center bullet
 					bullets[i].setDirection(ship.getDirection());
 					bullets[i].setActive(true);
+					sfx_shoot.play();
 				}
 
 				if (bullets[i].isActive()) { // bullet is active
@@ -288,21 +339,28 @@ int main() {
 							}
 						}
 					}
-
-					if (circlesCollided(a->getPosition(), ship.getPosition(), a->getRadius(), ship.getCollisionRadius())) {
-						a->setColor(Color::Red);
-						playerLives--;
-						ship.loseLife();
-						ship.setPosition(Vector2f(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f));
-						if (playerLives <= 0) { // TODO: fix multi-collide
-							state = DEAD;
+					
+					if (doubleCollideTimer > 500) { // prevent multiple collisions over few frames
+						if (circlesCollided(a->getPosition(), ship.getPosition(), a->getRadius(), ship.getCollisionRadius())) {
+							playerLives--;
+							doubleCollideTimer = 0;
+							ship.loseLife();
+							sfx_die.play();
+							ship.setPosition(Vector2f(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f));
+							if (playerLives <= 0) { // TODO: fix multi-collide
+								state = DEAD;
+							}
 						}
+					}
+					else {
+						ship.setColor(Color::Blue);
+						doubleCollideTimer++;
 					}
 
 					for (int i = 0; i < bullets.size(); i++) {
 						if (bullets[i].isActive()) {
 							if (circlesCollided(a->getPosition(), bullets[i].getPosition(), a->getRadius(), bullets[i].getRadius())) {
-								score += rand() % 900 + 100;
+								score += rand() % 90 + 10;
 								bullets[i].setActive(false);
 								if (a->getSize() > 1) {
 									// get asteroid current pos and new radius
@@ -336,6 +394,19 @@ int main() {
 						}
 					}
 				}
+			}
+
+			bool activeAsteroid = false;
+			for (int i = 0; i < asteroids.size(); i++) {
+				if (asteroids[i]->isActive()) {
+					activeAsteroid = true;
+					break;
+				}
+			}
+
+			if (!activeAsteroid) {
+				currentLevel++;
+				asteroids = prepAsteroids(currentLevel, &asteroidTexture);
 			}
 
 			// DRAW (GAMEPLAY)
