@@ -50,6 +50,9 @@ bool circlesCollided(Vector2f position1, Vector2f position2, float radius1, floa
 	}
 }
 
+/*
+	Allocate a new array of asteroids for each level.
+*/
 vector<Asteroid*> prepAsteroids(int level, Texture* asteroidTexture) {
 	vector<Asteroid*> asteroids;
 	int numAsteroids = level * levelMultiplier;
@@ -76,10 +79,26 @@ vector<Asteroid*> prepAsteroids(int level, Texture* asteroidTexture) {
 
 int main() {
 
+	// PARAMETERS
+	// initial values
+	int state = MENU; // for FSM
 	int currentLevel = 1;
 	int playerLives = 3;
 	int score = 0;
 
+	// key booleans
+	bool left = false;
+	bool right = false;
+	bool up = false;
+	bool space = false;
+
+	// timing
+	int dt_ms = 0;
+	Clock clock;
+	int thrustSoundTimer = 0;
+	int doubleCollideTimer = 0;
+
+	// SFX IMPORT
 	SoundBuffer victoryBuffer;
 	if (!victoryBuffer.loadFromFile("sweet sweet victory yeah.wav")) {
 		exit(-1);
@@ -115,6 +134,7 @@ int main() {
 	Sound sfx_shoot;
 	sfx_shoot.setBuffer(shootBuffer);
 
+	// TEXTURE IMPORT
 	Texture shipTexture;
 	if (!shipTexture.loadFromFile("ship_texture.png")) {
 		exit(-1);
@@ -147,6 +167,7 @@ int main() {
 		exit(-1);
 	}
 
+	// STATIC OBJECTS
 	RectangleShape menuBgImage = RectangleShape(Vector2f(WINDOW_WIDTH, WINDOW_HEIGHT));
 	menuBgImage.setPosition(Vector2f(0, 0));
 	menuBgImage.setTexture(&menuBg);
@@ -205,22 +226,7 @@ int main() {
 	scoreNumber.setString("0");
 	scoreNumber.setPosition(WINDOW_WIDTH - 100, WINDOW_HEIGHT - 50);
 
-	// timing
-	int dt_ms = 0;
-	Clock clock;
-	int thrustSoundTimer = 0;
-	int doubleCollideTimer = 0;
-
-	// key booleans
-	bool left = false;
-	bool right = false;
-	bool up = false;
-	bool space = false;
-
-	// state
-	int state = MENU;
-
-	// game objects
+	// DYNAMIC OBJECTS
 	Ship ship = Ship(Vector2f(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f), Vector2f(0, 0), 20, &shipTexture);
 	vector<Asteroid*> asteroids = prepAsteroids(currentLevel, &asteroidTexture);
 
@@ -241,7 +247,7 @@ int main() {
 		powerups.push_back(new PowerUp());
 	}
 
-	// window setup
+	// WINDOW
 	RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Asteroids");
 	window.setVerticalSyncEnabled(true);
 	window.setKeyRepeatEnabled(false);
@@ -291,7 +297,8 @@ int main() {
 		clock.restart();
 
 		window.clear();
-
+		
+		// MENU STATE
 		if (state == MENU) {
 			window.draw(menuBgImage);
 			window.draw(titleTextShadow);
@@ -317,6 +324,7 @@ int main() {
 				state = GAMEPLAY;
 			}
 		}
+		// DEAD STATE
 		else if (state == DEAD) {
 			window.draw(gameBgImage);
 			for (int i = 0; i < asteroids.size(); i++) {
@@ -330,6 +338,7 @@ int main() {
 			window.draw(scoreText);
 			window.draw(scoreNumber);
 		}
+		// GAMEPLAY STATE
 		else if (state == GAMEPLAY) {
 
 			// UPDATE
@@ -370,7 +379,6 @@ int main() {
 			for (int i = 0; i < powerups.size(); i++) {
 				if (powerups[i]->isActive()) {
 					if (circlesCollided(powerups[i]->getPosition(), ship.getPosition(), powerups[i]->getRadius(), ship.getCollisionRadius())) {
-						// TODO: powerups do things
 						if (powerups[i]->getType() == 1) {
 							window.setKeyRepeatEnabled(true); // rapid fire lol
 						}
@@ -504,7 +512,6 @@ int main() {
 										}
 
 										a->setSpray(false);
-										
 									}
 
 									if (a->isMany()) { // multi-asteroid
@@ -550,6 +557,7 @@ int main() {
 				}
 			}
 
+			// WIN CHECK
 			bool activeAsteroid = false;
 			for (int i = 0; i < asteroids.size(); i++) {
 				if (asteroids[i]->isActive()) {
@@ -560,13 +568,23 @@ int main() {
 
 			if (!activeAsteroid) {
 				currentLevel++;
+
+				// destroy current asteroids
+				for (int i = 0; i < asteroids.size(); i++) {
+					delete(asteroids[i]);
+				}
+
+				// create for next level
 				asteroids = prepAsteroids(currentLevel, &asteroidTexture);
-				sfx_victory.play();
+				
+				// reset params
 				doubleCollideTimer = 0;
 				window.setKeyRepeatEnabled(false);
+
+				sfx_victory.play();
 			}
 
-			// DRAW (GAMEPLAY)
+			// DRAW
 			window.draw(gameBgImage);
 
 			ship.draw(&window);
@@ -598,7 +616,6 @@ int main() {
 			window.draw(livesNumber);
 			window.draw(scoreText);
 			window.draw(scoreNumber);
-
 		}
 
 		window.display();
