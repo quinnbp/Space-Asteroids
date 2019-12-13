@@ -8,6 +8,8 @@ Quinn Barker-Plummer
 
 A C++ clone of the classic game Asteroids, featuring powerups (shield, asteroid slowdown, and hold-down rapid fire) and asteroid types (normal, multi-split, bullet spray).
 
+Uses a pseudo-bucket-sort algorithm to reduce overall collision checks. 
+
 ## Execution
 
 Everything needed for execution of the game is in AsteroidsFinal.zip. Space Asteroids utilizes SFML and some custom textures, so the executable will not run without the additional files in its current state.

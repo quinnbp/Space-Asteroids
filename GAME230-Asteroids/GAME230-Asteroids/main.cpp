@@ -27,6 +27,8 @@ const int levelMultiplier = 5;
 const float powerDrop = 0.15;
 const float powerSlowFactor = 0.2;
 
+const int bucketSize = 128;
+
 const float PI = 3.1415926535;
 
 enum { MENU, GAMEPLAY, DEAD };
@@ -75,6 +77,21 @@ vector<Asteroid*> prepAsteroids(int level, Texture* asteroidTexture) {
 	}
 
 	return asteroids;
+}
+
+/*
+	Determines if two objects are in the same or adjacent buckets based on their positions; decide if need to check collision.
+*/
+bool inAdjacentBuckets(Vector2f position1, Vector2f position2) {
+	Vector2f bucket1 = Vector2f(floor(position1.x / bucketSize), floor(position1.y / bucketSize));
+	Vector2f bucket2 = Vector2f(floor(position2.x / bucketSize), floor(position2.y / bucketSize));
+
+	 if (abs(bucket1.x - bucket2.x) <= 1 && abs(bucket1.y - bucket2.y) <= 1) {
+		 // if both zero, same bucket
+		 // if one or both is 1, adjacent buckets
+		return true;
+	}
+	return false;
 }
 
 int main() {
@@ -378,25 +395,28 @@ int main() {
 			//powerups -> ship
 			for (int i = 0; i < powerups.size(); i++) {
 				if (powerups[i]->isActive()) {
-					if (circlesCollided(powerups[i]->getPosition(), ship.getPosition(), powerups[i]->getRadius(), ship.getCollisionRadius())) {
-						if (powerups[i]->getType() == 1) {
-							window.setKeyRepeatEnabled(true); // rapid fire lol
-						}
-						else if (powerups[i]->getType() == 2) { // shield
-							ship.setShield(true);
-						}
-						else if (powerups[i]->getType() == 3) { // slow all asteroids
-							for (int i = 0; i < asteroids.size(); i++) {
-								if (asteroids[i]->isActive()) {
-									asteroids[i]->setVelocity(Vector2f(
-										asteroids[i]->getVelocity().x * powerSlowFactor, 
-										asteroids[i]->getVelocity().y * powerSlowFactor
-									));
+					// bucketing
+					if (inAdjacentBuckets(powerups[i]->getPosition(), ship.getPosition())) {
+						if (circlesCollided(powerups[i]->getPosition(), ship.getPosition(), powerups[i]->getRadius(), ship.getCollisionRadius())) {
+							if (powerups[i]->getType() == 1) {
+								window.setKeyRepeatEnabled(true); // rapid fire lol
+							}
+							else if (powerups[i]->getType() == 2) { // shield
+								ship.setShield(true);
+							}
+							else if (powerups[i]->getType() == 3) { // slow all asteroids
+								for (int i = 0; i < asteroids.size(); i++) {
+									if (asteroids[i]->isActive()) {
+										asteroids[i]->setVelocity(Vector2f(
+											asteroids[i]->getVelocity().x * powerSlowFactor,
+											asteroids[i]->getVelocity().y * powerSlowFactor
+										));
+									}
 								}
 							}
+							score += rand() % 90 + 10;
+							powerups[i]->setActive(false);
 						}
-						score += rand() % 90 + 10;
-						powerups[i]->setActive(false);
 					}
 				}
 			}
@@ -408,149 +428,155 @@ int main() {
 					for (int j = i + 1; j < asteroids.size(); j++) {
 						if (asteroids[j]->isActive()) {
 							Asteroid* b = asteroids[j];
-							if (circlesCollided(a->getPosition(), b->getPosition(), a->getRadius(), b->getRadius())) {
-								// exchange velocities (generalization of 1d equal mass collision)
-								Vector2f v1 = a->getVelocity();
-								a->setVelocity(b->getVelocity());
-								b->setVelocity(v1);
+							if (inAdjacentBuckets(a->getPosition(), b->getPosition())) {
+								if (circlesCollided(a->getPosition(), b->getPosition(), a->getRadius(), b->getRadius())) {
+									// exchange velocities (generalization of 1d equal mass collision)
+									Vector2f v1 = a->getVelocity();
+									a->setVelocity(b->getVelocity());
+									b->setVelocity(v1);
+								}
 							}
 						}
 					}
 					// asteroids -> ship
 					if (doubleCollideTimer > 500) { // prevent multiple collisions over few frames
-						if (circlesCollided(a->getPosition(), ship.getPosition(), a->getRadius(), ship.getCollisionRadius())) {
-							if (!ship.getShield()) {
-								playerLives--;
-								for (int i = 0; i < explosions.size(); i++) {
-									if (!explosions[i]->isActive()) {
-										explosions[i]->setPosition(a->getPosition());
-										explosions[i]->setActive(true);
-										break;
+						if (inAdjacentBuckets(ship.getPosition(), a->getPosition())) {
+							if (circlesCollided(a->getPosition(), ship.getPosition(), a->getRadius(), ship.getCollisionRadius())) {
+								if (!ship.getShield()) {
+									playerLives--;
+									for (int i = 0; i < explosions.size(); i++) {
+										if (!explosions[i]->isActive()) {
+											explosions[i]->setPosition(a->getPosition());
+											explosions[i]->setActive(true);
+											break;
+										}
+									}
+									//ship.setPosition(Vector2f(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f));
+									if (playerLives <= 0) {
+										state = DEAD;
 									}
 								}
-								//ship.setPosition(Vector2f(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f));
-								if (playerLives <= 0) {
-									state = DEAD;
+								else {
+									ship.setShield(false);
 								}
-							}
-							else {
-								ship.setShield(false);
-							}
 
-							doubleCollideTimer = 0;
-							sfx_hit.play();
+								doubleCollideTimer = 0;
+								sfx_hit.play();
+							}
 						}
 					}
 					else {
-						ship.setColor(Color::Blue);
+						ship.setColor(Color::Red);
 						doubleCollideTimer++;
 					}
 
 					// asteroids -> bullets
 					for (int i = 0; i < bullets.size(); i++) {
 						if (bullets[i].isActive()) {
-							if (circlesCollided(a->getPosition(), bullets[i].getPosition(), a->getRadius(), bullets[i].getRadius())) {
-								score += rand() % 90 + 10;
-								bullets[i].setActive(false);
-								sfx_explosion.play();
-								for (int i = 0; i < explosions.size(); i++) {
-									if (!explosions[i]->isActive()) {
-										explosions[i]->setPosition(a->getPosition());
-										explosions[i]->setActive(true);
-										break;
-									}
-								}
-								float randVal = (float)rand() / RAND_MAX;
-								if (randVal < powerDrop) { 
-									float genType = rand() % 3;
-									for (int i = 0; i < powerups.size(); i++) {
-										if (!powerups[i]->isActive()) {
-											powerups[i]->setPosition(a->getPosition());
-											powerups[i]->setType(genType);
-											powerups[i]->setActive(true);
+							if (inAdjacentBuckets(a->getPosition(), bullets[i].getPosition())) {
+								if (circlesCollided(a->getPosition(), bullets[i].getPosition(), a->getRadius(), bullets[i].getRadius())) {
+									score += rand() % 90 + 10;
+									bullets[i].setActive(false);
+									sfx_explosion.play();
+									for (int i = 0; i < explosions.size(); i++) {
+										if (!explosions[i]->isActive()) {
+											explosions[i]->setPosition(a->getPosition());
+											explosions[i]->setActive(true);
+											break;
 										}
 									}
-								}
-
-								if (a->getSize() > 1) {
-									// get asteroid current pos and new radius
-									Vector2f currentPos = a->getPosition();
-									float newRadius = a->getRadius() / 2.0f;
-
-									// generate two new positions and velocities
-									Vector2f newpos1 = Vector2f(currentPos.x + a->getRadius() / 2.0f, currentPos.y + a->getRadius() / 2.0f);
-									Vector2f newpos2 = Vector2f(currentPos.x - a->getRadius() / 2.0f, currentPos.y - a->getRadius() / 2.0f);
-
-									Vector2f newvel1 = a->getVelocity();
-									Vector2f newvel2 = Vector2f(-1.0f * a->getVelocity().x, -1.0f * a->getVelocity().y);
-
-									if (a->isSpray()) { // spray asteroid
-										vector<Bullet*> tempBullets;
-										for (int i = 0; i < 4; i++) { // find four inactive bullets
-											for (int j = 0; j < bullets.size(); j++) {
-												if (!bullets[j].isActive()) {
-													bullets[j].setActive(true);
-													bullets[j].setPosition(a->getPosition()); // TODO: variable position?
-													tempBullets.push_back(&bullets[j]);
-													break;
-												}
+									float randVal = (float)rand() / RAND_MAX;
+									if (randVal < powerDrop) {
+										float genType = rand() % 3;
+										for (int i = 0; i < powerups.size(); i++) {
+											if (!powerups[i]->isActive()) {
+												powerups[i]->setPosition(a->getPosition());
+												powerups[i]->setType(genType);
+												powerups[i]->setActive(true);
 											}
 										}
-										
-										// have to catch for if we don't find an active bullet
-										if (tempBullets.size() > 0) {
-											tempBullets[0]->setVelocity(a->getVelocity());
-										}
-										if (tempBullets.size() > 1) {
-											tempBullets[1]->setVelocity(Vector2f(a->getVelocity().x, -1.0f * a->getVelocity().y));
-										}
-										if (tempBullets.size() > 2) {
-											tempBullets[2]->setVelocity(Vector2f(-1.0f * a->getVelocity().x, a->getVelocity().y));
-										}
-										if (tempBullets.size() > 3) {
-											tempBullets[3]->setVelocity(Vector2f(-1.0f * a->getVelocity().x, -1.0f * a->getVelocity().y));
-										}
-
-										a->setSpray(false);
 									}
 
-									if (a->isMany()) { // multi-asteroid
-										Vector2f newpos3 = Vector2f(currentPos.x + a->getRadius() / 2.0f, currentPos.y - a->getRadius() / 2.0f);
-										Vector2f newpos4 = Vector2f(currentPos.x - a->getRadius() / 2.0f, currentPos.y + a->getRadius() / 2.0f);
+									if (a->getSize() > 1) {
+										// get asteroid current pos and new radius
+										Vector2f currentPos = a->getPosition();
+										float newRadius = a->getRadius() / 2.0f;
 
-										Vector2f newvel3 = Vector2f(a->getVelocity().x, -1.0f * a->getVelocity().y);
-										Vector2f newvel4 = Vector2f(-1.0f * a->getVelocity().x, a->getVelocity().y);
+										// generate two new positions and velocities
+										Vector2f newpos1 = Vector2f(currentPos.x + a->getRadius() / 2.0f, currentPos.y + a->getRadius() / 2.0f);
+										Vector2f newpos2 = Vector2f(currentPos.x - a->getRadius() / 2.0f, currentPos.y - a->getRadius() / 2.0f);
 
-										Asteroid* spawned2;
-										spawned2 = new Asteroid(newpos3, newvel3, newRadius, &asteroidTexture);
-										spawned2->setSize(a->getSize() - 1);
-										asteroids.push_back(spawned2);
+										Vector2f newvel1 = a->getVelocity();
+										Vector2f newvel2 = Vector2f(-1.0f * a->getVelocity().x, -1.0f * a->getVelocity().y);
 
-										Asteroid* spawned3;
-										spawned3 = new Asteroid(newpos4, newvel4, newRadius, &asteroidTexture);
-										spawned3->setSize(a->getSize() - 1);
-										asteroids.push_back(spawned3);
+										if (a->isSpray()) { // spray asteroid
+											vector<Bullet*> tempBullets;
+											for (int i = 0; i < 4; i++) { // find four inactive bullets
+												for (int j = 0; j < bullets.size(); j++) {
+													if (!bullets[j].isActive()) {
+														bullets[j].setActive(true);
+														bullets[j].setPosition(a->getPosition()); // TODO: variable position?
+														tempBullets.push_back(&bullets[j]);
+														break;
+													}
+												}
+											}
 
-										a->setMany(false);
+											// have to catch for if we don't find an active bullet
+											if (tempBullets.size() > 0) {
+												tempBullets[0]->setVelocity(a->getVelocity());
+											}
+											if (tempBullets.size() > 1) {
+												tempBullets[1]->setVelocity(Vector2f(a->getVelocity().x, -1.0f * a->getVelocity().y));
+											}
+											if (tempBullets.size() > 2) {
+												tempBullets[2]->setVelocity(Vector2f(-1.0f * a->getVelocity().x, a->getVelocity().y));
+											}
+											if (tempBullets.size() > 3) {
+												tempBullets[3]->setVelocity(Vector2f(-1.0f * a->getVelocity().x, -1.0f * a->getVelocity().y));
+											}
+
+											a->setSpray(false);
+										}
+
+										if (a->isMany()) { // multi-asteroid
+											Vector2f newpos3 = Vector2f(currentPos.x + a->getRadius() / 2.0f, currentPos.y - a->getRadius() / 2.0f);
+											Vector2f newpos4 = Vector2f(currentPos.x - a->getRadius() / 2.0f, currentPos.y + a->getRadius() / 2.0f);
+
+											Vector2f newvel3 = Vector2f(a->getVelocity().x, -1.0f * a->getVelocity().y);
+											Vector2f newvel4 = Vector2f(-1.0f * a->getVelocity().x, a->getVelocity().y);
+
+											Asteroid* spawned2;
+											spawned2 = new Asteroid(newpos3, newvel3, newRadius, &asteroidTexture);
+											spawned2->setSize(a->getSize() - 1);
+											asteroids.push_back(spawned2);
+
+											Asteroid* spawned3;
+											spawned3 = new Asteroid(newpos4, newvel4, newRadius, &asteroidTexture);
+											spawned3->setSize(a->getSize() - 1);
+											asteroids.push_back(spawned3);
+
+											a->setMany(false);
+										}
+
+										// spawn a new asteroid with one of each and push back
+										Asteroid* spawned1;
+										spawned1 = new Asteroid(newpos1, newvel1, newRadius, &asteroidTexture);
+										spawned1->setSize(a->getSize() - 1);
+										asteroids.push_back(spawned1);
+
+										// set a to other two (reuse)
+										a->setPosition(newpos2);
+										a->setVelocity(newvel2);
+										a->setRadius(newRadius);
+										a->setSize(a->getSize() - 1);
+									}
+									else {
+										// smallest size elminiation
+										a->setActive(false);
 									}
 
-									// spawn a new asteroid with one of each and push back
-									Asteroid* spawned1;
-									spawned1 = new Asteroid(newpos1, newvel1, newRadius, &asteroidTexture);
-									spawned1->setSize(a->getSize() - 1);
-									asteroids.push_back(spawned1);
-
-									// set a to other two (reuse)
-									a->setPosition(newpos2);
-									a->setVelocity(newvel2);
-									a->setRadius(newRadius);
-									a->setSize(a->getSize() - 1);
 								}
-								else {
-									// smallest size elminiation
-									a->setActive(false);
-								}
-
 							}
 						}
 					}
