@@ -27,7 +27,7 @@ const int levelMultiplier = 5;
 const float powerDrop = 0.15;
 const float powerSlowFactor = 0.2;
 
-const int bucketSize = 128;
+const int bucketSize = 64;
 
 const float PI = 3.1415926535;
 
@@ -487,7 +487,7 @@ int main() {
 									}
 									float randVal = (float)rand() / RAND_MAX;
 									if (randVal < powerDrop) {
-										float genType = rand() % 3;
+										float genType = rand() % 3 + 1;
 										for (int i = 0; i < powerups.size(); i++) {
 											if (!powerups[i]->isActive()) {
 												powerups[i]->setPosition(a->getPosition());
