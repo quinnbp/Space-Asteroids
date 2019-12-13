@@ -25,7 +25,7 @@ const int numAsteroids = 10;
 const int asteroidStartRadius = 30;
 const int levelMultiplier = 5;
 const float powerDrop = 0.15;
-const float powerSlowFactor = 0.2;
+const float powerSlowFactor = 0.8;
 
 const int bucketSize = 64;
 
