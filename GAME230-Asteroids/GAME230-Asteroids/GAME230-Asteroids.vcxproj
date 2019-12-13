@@ -151,12 +151,15 @@
   <ItemGroup>
     <ClCompile Include="asteroid.cpp" />
     <ClCompile Include="bullet.cpp" />
+    <ClCompile Include="Explosion.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="PowerUp.cpp" />
     <ClCompile Include="ship.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="asteroid.h" />
     <ClInclude Include="bullet.h" />
+    <ClInclude Include="Explosion.h" />
     <ClInclude Include="PowerUp.h" />
     <ClInclude Include="ship.h" />
   </ItemGroup>

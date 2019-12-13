@@ -12,8 +12,6 @@ Asteroid::Asteroid(Vector2f position, Vector2f velocity, float radius, Texture* 
 	this->shape = CircleShape(this->radius, 100);
 	this->shape.setFillColor(Color::White);
 	this->shape.setTexture(texture);
-
-	cout << "asteroid constructed" << endl;
 }
 
 void Asteroid::draw(RenderWindow* window) {

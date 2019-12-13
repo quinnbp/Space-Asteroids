@@ -10,8 +10,8 @@ Ship::Ship(Vector2f position, Vector2f velocity, int dimension, Texture* texture
 	this->direction = Vector2f(1, 0);
 
 	// tweakable traits governing min/max behavior of the ship
-	this->baseAcceleration = 0.05f;
-	this->maxSpeed = 0.2f;
+	this->baseAcceleration = 0.01f;
+	this->maxSpeed = 0.3f;
 
 	// collision parameters
 	this->collisionRadius = dimension / 2;

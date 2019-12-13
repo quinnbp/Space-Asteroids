@@ -11,6 +11,8 @@
 #include "asteroid.h"
 #include "ship.h"
 #include "bullet.h"
+#include "Explosion.h"
+#include "PowerUp.h"
 
 using namespace std;
 using namespace sf;
@@ -21,7 +23,8 @@ const int WINDOW_HEIGHT = 1024;
 const int maxBullets = 50;
 const int numAsteroids = 10;
 const int asteroidStartRadius = 30;
-const int levelMultiplier = 10;
+const int levelMultiplier = 5;
+const float powerDrop = 0.2;
 
 const float PI = 3.1415926535;
 
@@ -69,12 +72,26 @@ int main() {
 	int playerLives = 3;
 	int score = 0;
 
+	SoundBuffer victoryBuffer;
+	if (!victoryBuffer.loadFromFile("sweet sweet victory yeah.wav")) {
+		exit(-1);
+	}
+	Sound sfx_victory;
+	sfx_victory.setBuffer(victoryBuffer);
+
 	SoundBuffer thrustBuffer;
 	if (!thrustBuffer.loadFromFile("thrust1.wav")) {
 		exit(-1);
 	}
 	Sound sfx_thrust;
 	sfx_thrust.setBuffer(thrustBuffer);
+
+	SoundBuffer explosionBuffer;
+	if (!explosionBuffer.loadFromFile("explosion.wav")) {
+		exit(-1);
+	}
+	Sound sfx_explosion;
+	sfx_explosion.setBuffer(explosionBuffer);
 
 	SoundBuffer dieBuffer;
 	if (!dieBuffer.loadFromFile("thrust2.wav")) {
@@ -206,6 +223,16 @@ int main() {
 		bullets.push_back(newBullet);
 	}
 
+	vector<Explosion*> explosions;
+	for (int i = 0; i < 20; i++) {
+		explosions.push_back(new Explosion());
+	}
+
+	vector<PowerUp*> powerups;
+	for (int i = 0; i < 10; i++) {
+		powerups.push_back(new PowerUp());
+	}
+
 	// window setup
 	RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Asteroids");
 	window.setVerticalSyncEnabled(true);
@@ -309,11 +336,16 @@ int main() {
 			for (int i = 0; i < asteroids.size(); i++) {
 				asteroids[i]->update(dt_ms, WINDOW_WIDTH, WINDOW_HEIGHT);
 			}
+			for (int i = 0; i < explosions.size(); i++) {
+				if (explosions[i]->isActive()) {
+					explosions[i]->update();
+				}
+			}
 
 			for (int i = 0; i < bullets.size(); i++) {
 				if (space && !bullets[i].isActive()) { // bullet is inactive and we need one
 					space = false;
-					bullets[i].setPosition(ship.getPosition()); // TODO: center bullet
+					bullets[i].setPosition(ship.getPosition());
 					bullets[i].setDirection(ship.getDirection());
 					bullets[i].setActive(true);
 					sfx_shoot.play();
@@ -325,6 +357,18 @@ int main() {
 			}
 
 			// COLLISION
+			//powerups -> ship
+			for (int i = 0; i < powerups.size(); i++) {
+				if (powerups[i]->isActive()) {
+					if (circlesCollided(powerups[i]->getPosition(), ship.getPosition(), powerups[i]->getRadius(), ship.getCollisionRadius())) {
+						// TODO: powerups do things
+						score += rand() % 90 + 10;
+						powerups[i]->setActive(false);
+					}
+				}
+			}
+
+			// asteroids -> all
 			for (int i = 0; i < asteroids.size(); i++) {
 				if (asteroids[i]->isActive()) {
 					Asteroid* a = asteroids[i];
@@ -339,15 +383,21 @@ int main() {
 							}
 						}
 					}
-					
+
 					if (doubleCollideTimer > 500) { // prevent multiple collisions over few frames
 						if (circlesCollided(a->getPosition(), ship.getPosition(), a->getRadius(), ship.getCollisionRadius())) {
 							playerLives--;
 							doubleCollideTimer = 0;
-							ship.loseLife();
+							for (int i = 0; i < explosions.size(); i++) {
+								if (!explosions[i]->isActive()) {
+									explosions[i]->setPosition(a->getPosition());
+									explosions[i]->setActive(true);
+									break;
+								}
+							}
 							sfx_die.play();
 							ship.setPosition(Vector2f(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f));
-							if (playerLives <= 0) { // TODO: fix multi-collide
+							if (playerLives <= 0) {
 								state = DEAD;
 							}
 						}
@@ -362,6 +412,26 @@ int main() {
 							if (circlesCollided(a->getPosition(), bullets[i].getPosition(), a->getRadius(), bullets[i].getRadius())) {
 								score += rand() % 90 + 10;
 								bullets[i].setActive(false);
+								sfx_explosion.play();
+								for (int i = 0; i < explosions.size(); i++) {
+									if (!explosions[i]->isActive()) {
+										explosions[i]->setPosition(a->getPosition());
+										explosions[i]->setActive(true);
+										break;
+									}
+								}
+								float randVal = (float)rand() / RAND_MAX;
+								if (randVal < powerDrop) { 
+									float genType = rand() % 3;
+									for (int i = 0; i < powerups.size(); i++) {
+										if (!powerups[i]->isActive()) {
+											powerups[i]->setPosition(a->getPosition());
+											powerups[i]->setType(genType);
+											powerups[i]->setActive(true);
+										}
+									}
+								}
+
 								if (a->getSize() > 1) {
 									// get asteroid current pos and new radius
 									Vector2f currentPos = a->getPosition();
@@ -407,6 +477,8 @@ int main() {
 			if (!activeAsteroid) {
 				currentLevel++;
 				asteroids = prepAsteroids(currentLevel, &asteroidTexture);
+				sfx_victory.play();
+				doubleCollideTimer = 0;
 			}
 
 			// DRAW (GAMEPLAY)
@@ -421,6 +493,16 @@ int main() {
 			for (int i = 0; i < bullets.size(); i++) {
 				if (bullets[i].isActive()) {
 					bullets[i].draw(&window);
+				}
+			}
+			for (int i = 0; i < explosions.size(); i++) {
+				if (explosions[i]->isActive()) {
+					explosions[i]->draw(&window);
+				}
+			}
+			for (int i = 0; i < powerups.size(); i++) {
+				if (powerups[i]->isActive()) {
+					powerups[i]->draw(&window);
 				}
 			}
 

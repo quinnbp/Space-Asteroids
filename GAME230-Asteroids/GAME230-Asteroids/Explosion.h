@@ -10,22 +10,18 @@
 
 using namespace sf;
 
-// bullet spray, penetrating bullet, invincible ship (1-hit)
-
-class PowerUp {
+class Explosion {
 public:
-	PowerUp();
-	void setPosition(Vector2f newpos);
-	void setActive(bool state);
-	bool isActive();
-	void setType(int type);
-	float getRadius();
-	Vector2f getPosition();
+	Explosion();
 	void draw(RenderWindow* window);
+	void update();
+	bool isActive();
+	void setActive(bool state);
+	void setPosition(Vector2f position);
 private:
-	Vector2f position;
-	int type;
+	int duration;
 	float radius;
 	CircleShape shape;
+	Vector2f position;
 	bool active;
 };
