@@ -24,8 +24,8 @@ const int maxBullets = 50;
 const int numAsteroids = 10;
 const int asteroidStartRadius = 30;
 const int levelMultiplier = 5;
-const float powerDrop = 0.2;
-const float powerSlowFactor = 0.75;
+const float powerDrop = 0.15;
+const float powerSlowFactor = 0.2;
 
 const float PI = 3.1415926535;
 
@@ -64,6 +64,10 @@ vector<Asteroid*> prepAsteroids(int level, Texture* asteroidTexture) {
 		newAsteroid->setActive(true);
 		asteroids.push_back(newAsteroid);
 	}
+	for (int i = 0; i < level; i++) {
+		asteroids[i]->setMany(true);
+	}
+
 	return asteroids;
 }
 
@@ -413,7 +417,7 @@ int main() {
 										break;
 									}
 								}
-								ship.setPosition(Vector2f(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f));
+								//ship.setPosition(Vector2f(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f));
 								if (playerLives <= 0) {
 									state = DEAD;
 								}
@@ -465,8 +469,29 @@ int main() {
 									// generate two new positions and velocities
 									Vector2f newpos1 = Vector2f(currentPos.x + a->getRadius() / 2.0f, currentPos.y + a->getRadius() / 2.0f);
 									Vector2f newpos2 = Vector2f(currentPos.x - a->getRadius() / 2.0f, currentPos.y - a->getRadius() / 2.0f);
+
 									Vector2f newvel1 = a->getVelocity();
 									Vector2f newvel2 = Vector2f(-1.0f * a->getVelocity().x, -1.0f * a->getVelocity().y);
+
+									if (a->isMany()) { // multi-asteroid
+										Vector2f newpos3 = Vector2f(currentPos.x + a->getRadius() / 2.0f, currentPos.y - a->getRadius() / 2.0f);
+										Vector2f newpos4 = Vector2f(currentPos.x - a->getRadius() / 2.0f, currentPos.y + a->getRadius() / 2.0f);
+
+										Vector2f newvel3 = Vector2f(a->getVelocity().x, -1.0f * a->getVelocity().y);
+										Vector2f newvel4 = Vector2f(-1.0f * a->getVelocity().x, a->getVelocity().y);
+
+										Asteroid* spawned2;
+										spawned2 = new Asteroid(newpos3, newvel3, newRadius, &asteroidTexture);
+										spawned2->setSize(a->getSize() - 1);
+										asteroids.push_back(spawned2);
+
+										Asteroid* spawned3;
+										spawned3 = new Asteroid(newpos4, newvel4, newRadius, &asteroidTexture);
+										spawned3->setSize(a->getSize() - 1);
+										asteroids.push_back(spawned3);
+
+										a->setMany(false);
+									}
 
 									// spawn a new asteroid with one of each and push back
 									Asteroid* spawned1;

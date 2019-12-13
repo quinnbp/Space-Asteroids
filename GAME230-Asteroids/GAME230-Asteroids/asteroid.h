@@ -26,6 +26,8 @@ public:
 	void setPosition(Vector2f newpos);
 	void setSize(int newsize);
 	int getSize();
+	void setMany(bool state);
+	bool isMany();
 private:
 	Vector2f velocity;
 	Vector2f position;
@@ -33,4 +35,5 @@ private:
 	float radius;
 	bool active;
 	int size;
+	bool many;
 };
