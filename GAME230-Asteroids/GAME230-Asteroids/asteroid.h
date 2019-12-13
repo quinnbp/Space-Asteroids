@@ -36,4 +36,7 @@ private:
 	bool active;
 	int size;
 	bool many;
+	float angle;
+	int angleModifier;
+	float rotationRate;
 };

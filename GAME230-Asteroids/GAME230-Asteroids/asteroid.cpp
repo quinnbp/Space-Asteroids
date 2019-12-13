@@ -9,6 +9,14 @@ Asteroid::Asteroid(Vector2f position, Vector2f velocity, float radius, Texture* 
 	this->radius = radius;
 	this->size = 3;
 
+	this->rotationRate = 36 / 200;
+	if (rand() % 2 == 0) {
+		this->angleModifier = -1;
+	}
+	else {
+		this->angleModifier = 1;
+	}
+
 	this->shape = CircleShape(this->radius, 100);
 	this->shape.setFillColor(Color::White);
 	this->shape.setTexture(texture);
@@ -24,7 +32,6 @@ void Asteroid::draw(RenderWindow* window) {
 void Asteroid::update(int dt_ms, int windowWidth, int windowHeight) {
 	this->position.x += this->velocity.x * dt_ms;
 	this->position.y += this->velocity.y * dt_ms;
-
 
 	if (this->position.x - this->radius >= windowWidth && this->velocity.x > 0) {
 		// headed right and off screen right
@@ -43,6 +50,8 @@ void Asteroid::update(int dt_ms, int windowWidth, int windowHeight) {
 		// headed down and off screen below
 		this->position.y = -this->radius;
 	}
+
+	//this->angle += dt_ms * this->rotationRate * this->angleModifier;
 }
 
 Vector2f Asteroid::getPosition() {
