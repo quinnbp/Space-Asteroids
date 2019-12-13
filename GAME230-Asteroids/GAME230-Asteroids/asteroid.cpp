@@ -22,6 +22,7 @@ Asteroid::Asteroid(Vector2f position, Vector2f velocity, float radius, Texture* 
 	this->shape.setTexture(texture);
 
 	this->many = false;
+	this->spray = false;
 }
 
 void Asteroid::draw(RenderWindow* window) {
@@ -110,6 +111,21 @@ void Asteroid::setMany(bool state) {
 		this->shape.setFillColor(Color::White);
 	}
 }
+
 bool Asteroid::isMany() {
 	return this->many;
+}
+
+void Asteroid::setSpray(bool state) {
+	this->spray = state;
+	if (state) {
+		this->shape.setFillColor(Color::Red);
+	}
+	else {
+		this->shape.setFillColor(Color::White);
+	}
+}
+
+bool Asteroid::isSpray() {
+	return this->spray;
 }

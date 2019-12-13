@@ -20,7 +20,7 @@ using namespace sf;
 const int WINDOW_WIDTH = 1024;
 const int WINDOW_HEIGHT = 1024;
 
-const int maxBullets = 50;
+const int maxBullets = 100;
 const int numAsteroids = 10;
 const int asteroidStartRadius = 30;
 const int levelMultiplier = 5;
@@ -66,6 +66,9 @@ vector<Asteroid*> prepAsteroids(int level, Texture* asteroidTexture) {
 	}
 	for (int i = 0; i < level; i++) {
 		asteroids[i]->setMany(true);
+	}
+	for (int i = level; i < 2 * level; i++) {
+		asteroids[i]->setSpray(true);
 	}
 
 	return asteroids;
@@ -472,6 +475,37 @@ int main() {
 
 									Vector2f newvel1 = a->getVelocity();
 									Vector2f newvel2 = Vector2f(-1.0f * a->getVelocity().x, -1.0f * a->getVelocity().y);
+
+									if (a->isSpray()) { // spray asteroid
+										vector<Bullet*> tempBullets;
+										for (int i = 0; i < 4; i++) { // find four inactive bullets
+											for (int j = 0; j < bullets.size(); j++) {
+												if (!bullets[j].isActive()) {
+													bullets[j].setActive(true);
+													bullets[j].setPosition(a->getPosition()); // TODO: variable position?
+													tempBullets.push_back(&bullets[j]);
+													break;
+												}
+											}
+										}
+										
+										// have to catch for if we don't find an active bullet
+										if (tempBullets.size() > 0) {
+											tempBullets[0]->setVelocity(a->getVelocity());
+										}
+										if (tempBullets.size() > 1) {
+											tempBullets[1]->setVelocity(Vector2f(a->getVelocity().x, -1.0f * a->getVelocity().y));
+										}
+										if (tempBullets.size() > 2) {
+											tempBullets[2]->setVelocity(Vector2f(-1.0f * a->getVelocity().x, a->getVelocity().y));
+										}
+										if (tempBullets.size() > 3) {
+											tempBullets[3]->setVelocity(Vector2f(-1.0f * a->getVelocity().x, -1.0f * a->getVelocity().y));
+										}
+
+										a->setSpray(false);
+										
+									}
 
 									if (a->isMany()) { // multi-asteroid
 										Vector2f newpos3 = Vector2f(currentPos.x + a->getRadius() / 2.0f, currentPos.y - a->getRadius() / 2.0f);

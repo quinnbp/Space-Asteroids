@@ -21,6 +21,7 @@ public:
 	void setDirection(Vector2f newdir);
 	Vector2f getPosition();
 	float getRadius();
+	void setVelocity(Vector2f newvel);
 private:
 	Vector2f position;
 	Vector2f direction;

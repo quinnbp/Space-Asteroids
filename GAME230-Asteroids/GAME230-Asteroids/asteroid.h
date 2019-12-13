@@ -28,6 +28,8 @@ public:
 	int getSize();
 	void setMany(bool state);
 	bool isMany();
+	void setSpray(bool state);
+	bool isSpray();
 private:
 	Vector2f velocity;
 	Vector2f position;
@@ -36,6 +38,8 @@ private:
 	bool active;
 	int size;
 	bool many;
+	bool spray;
+
 	float angle;
 	int angleModifier;
 	float rotationRate;

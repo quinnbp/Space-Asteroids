@@ -54,3 +54,10 @@ Vector2f Bullet::getPosition() {
 float Bullet::getRadius() {
 	return this->radius;
 }
+
+void Bullet::setVelocity(Vector2f newvel) {
+	// strip magnitude and assign to direction
+	// this is bad im aware
+	float magnitude = sqrt(newvel.x * newvel.x + newvel.y * newvel.y);
+	this->direction = Vector2f(newvel.x / magnitude, newvel.y / magnitude);
+}
