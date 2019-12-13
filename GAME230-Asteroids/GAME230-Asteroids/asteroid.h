@@ -20,9 +20,17 @@ public:
 	Vector2f getVelocity();
 	void setVelocity(Vector2f newvel);
 	void setColor(Color color);
+	void setRadius(float newrad);
+	void setActive(bool state);
+	bool isActive();
+	void setPosition(Vector2f newpos);
+	void setSize(int newsize);
+	int getSize();
 private:
 	Vector2f velocity;
 	Vector2f position;
 	CircleShape shape;
 	float radius;
+	bool active;
+	int size;
 };

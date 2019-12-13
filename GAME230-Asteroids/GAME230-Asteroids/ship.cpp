@@ -116,6 +116,10 @@ void Ship::updatePosition(int dt_ms, int windowWidth, int windowHeight) {
 	}
 }
 
+void Ship::loseLife() {
+	this->lives--;
+}
+
 void Ship::setAcceleration(float newacc) {
 	this->acceleration = newacc;
 }

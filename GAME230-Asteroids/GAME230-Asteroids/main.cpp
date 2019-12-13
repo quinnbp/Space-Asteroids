@@ -20,6 +20,7 @@ const int WINDOW_HEIGHT = 1024;
 
 const int maxBullets = 50;
 const int numAsteroids = 10;
+const int asteroidStartRadius = 30;
 
 const float PI = 3.1415926535;
 
@@ -46,6 +47,8 @@ bool circlesCollided(Vector2f position1, Vector2f position2, float radius1, floa
 
 int main() {
 
+	int playerLives = 3;
+
 	Texture shipTexture;
 	if (!shipTexture.loadFromFile("ship_texture.png")) {
 		exit(-1);
@@ -57,6 +60,24 @@ int main() {
 		exit(-1);
 	}
 	asteroidTexture.setSmooth(true);
+
+	Font arial;
+	if (!arial.loadFromFile("arial.ttf")) {
+		exit(-1);
+	}
+
+	Font spaceFont;
+	if (!spaceFont.loadFromFile("spacefont.otf")) {
+		exit(-1);
+	}
+
+	Text livesText;
+	livesText.setFont(arial);
+	Text livesNumber = livesText;
+	livesText.setString("Lives: ");
+	livesText.setPosition(10, WINDOW_HEIGHT - 30);
+	livesNumber.setString("3");
+	livesNumber.setPosition(100, WINDOW_HEIGHT - 30);
 
 	// timing
 	int dt_ms = 0;
@@ -78,7 +99,9 @@ int main() {
 	for (int i = 0; i < numAsteroids; i++) {
 		Vector2f position = Vector2f(((float)rand() / (RAND_MAX)) * WINDOW_WIDTH, ((float)rand() / (RAND_MAX) * WINDOW_HEIGHT));
 		Vector2f velocity = Vector2f(((float)rand() / (RAND_MAX)) / asteroidSpeedReduction, ((float)rand() / (RAND_MAX)) / asteroidSpeedReduction);
-		asteroids.push_back(Asteroid(position, velocity, 30, &asteroidTexture));
+		Asteroid newAsteroid = Asteroid(position, velocity, asteroidStartRadius, &asteroidTexture);
+		newAsteroid.setActive(true);
+		asteroids.push_back(newAsteroid);
 	}
 
 	vector<Bullet> bullets;
@@ -153,28 +176,61 @@ int main() {
 
 			// COLLISION
 			for (int i = 0; i < asteroids.size(); i++) {
-				Asteroid* a = &asteroids[i];
-				for (int j = i + 1; j < asteroids.size(); j++) {
-					Asteroid* b = &asteroids[j];
-					if (circlesCollided(a->getPosition(), b->getPosition(), a->getRadius(), b->getRadius())) {
-						// exchange velocities (generalization of 1d equal mass collision)
-						Vector2f v1 = a->getVelocity();
-						a->setVelocity(b->getVelocity());
-						b->setVelocity(v1);
+				if (asteroids[i].isActive()) {
+					Asteroid* a = &asteroids[i];
+					for (int j = i + 1; j < asteroids.size(); j++) {
+						if (asteroids[j].isActive()) {
+							Asteroid* b = &asteroids[j];
+							if (circlesCollided(a->getPosition(), b->getPosition(), a->getRadius(), b->getRadius())) {
+								// exchange velocities (generalization of 1d equal mass collision)
+								Vector2f v1 = a->getVelocity();
+								a->setVelocity(b->getVelocity());
+								b->setVelocity(v1);
+							}
+						}
 					}
-				}
 
-				if (circlesCollided(a->getPosition(), ship.getPosition(), a->getRadius(), ship.getCollisionRadius())) {
-					a->setColor(Color::Red);
-					// TODO: kill player
-				}
+					if (circlesCollided(a->getPosition(), ship.getPosition(), a->getRadius(), ship.getCollisionRadius())) {
+						ship.loseLife();
+						playerLives--;
+						livesNumber.setString(to_string(playerLives));
+						if (playerLives <= 0) {
+							//state = DEAD;
+						}
+					}
 
-				for (int i = 0; i < bullets.size(); i++) {
-					if (bullets[i].isActive()) {
-						if (circlesCollided(a->getPosition(), bullets[i].getPosition(), a->getRadius(), bullets[i].getRadius())) {
-							bullets[i].setActive(false);
-							a->setColor(Color::Blue);
-							// TODO: split asteroid
+					for (int i = 0; i < bullets.size(); i++) {
+						if (bullets[i].isActive()) {
+							if (circlesCollided(a->getPosition(), bullets[i].getPosition(), a->getRadius(), bullets[i].getRadius())) {
+								bullets[i].setActive(false);
+								if (a->getSize() > 1) {
+									// get asteroid current pos and new radius
+									Vector2f currentPos = a->getPosition();
+									float newRadius = a->getRadius() / 2.0f;
+
+									// generate two new positions and velocities
+									Vector2f newpos1 = Vector2f(currentPos.x + a->getRadius() / 2.0f, currentPos.y + a->getRadius() / 2.0f);
+									Vector2f newpos2 = Vector2f(currentPos.x - a->getRadius() / 2.0f, currentPos.y - a->getRadius() / 2.0f);
+									Vector2f newvel1 = a->getVelocity();
+									Vector2f newvel2 = Vector2f(-1.0f * a->getVelocity().x, -1.0f * a->getVelocity().y);
+
+									// spawn a new asteroid with one of each and push back
+									Asteroid spawned1 = Asteroid(newpos1, newvel1, newRadius, &asteroidTexture);
+									spawned1.setSize(a->getSize() - 1);
+									asteroids.push_back(spawned1);
+
+									// set a to other two (reuse)
+									a->setPosition(newpos2);
+									a->setVelocity(newvel2);
+									a->setRadius(newRadius);
+									a->setSize(a->getSize() - 1);
+								}
+								else {
+									// smallest size elminiation
+									a->setActive(false);
+								}
+
+							}
 						}
 					}
 				}
@@ -185,13 +241,18 @@ int main() {
 			// DRAW
 			ship.draw(&window);
 			for (int i = 0; i < asteroids.size(); i++) {
-				asteroids[i].draw(&window);
+				if (asteroids[i].isActive()) {
+					asteroids[i].draw(&window);
+				}
 			}
 			for (int i = 0; i < bullets.size(); i++) {
 				if (bullets[i].isActive()) {
 					bullets[i].draw(&window);
 				}
 			}
+
+			window.draw(livesText);
+			window.draw(livesNumber);
 
 		}
 

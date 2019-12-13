@@ -4,6 +4,7 @@ Asteroid::Asteroid(Vector2f position, Vector2f velocity, float radius, Texture* 
 	this->position = position;
 	this->velocity = velocity;
 	this->radius = radius;
+	this->size = 3;
 
 	this->shape = CircleShape(this->radius, 100);
 	this->shape.setFillColor(Color::White);
@@ -24,7 +25,7 @@ void Asteroid::update(int dt_ms, int windowWidth, int windowHeight) {
 		// headed right and off screen right
 		this->position.x = -this->radius;
 	}
-	else if (this->position.x + this->radius <= windowWidth && this->velocity.x < 0) {
+	else if (this->position.x + this->radius <= 0 && this->velocity.x < 0) {
 		// headed left and off screen left
 		this->position.x = windowWidth + this->radius;
 	}
@@ -43,8 +44,18 @@ Vector2f Asteroid::getPosition() {
 	return this->position;
 }
 
+void Asteroid::setPosition(Vector2f newpos) {
+	this->position = newpos;
+}
+
 float Asteroid::getRadius() {
 	return this->radius;
+}
+
+void Asteroid::setRadius(float newrad) {
+	if (newrad > 0) {
+		this->radius = newrad;
+	}
 }
 
 Vector2f Asteroid::getVelocity() {
@@ -57,4 +68,20 @@ void Asteroid::setVelocity(Vector2f newvel) {
 
 void Asteroid::setColor(Color color) {
 	this->shape.setFillColor(color);
+}
+
+void Asteroid::setActive(bool state) {
+	this->active = state;
+}
+
+bool Asteroid::isActive() {
+	return this->active;
+}
+
+int Asteroid::getSize() {
+	return this->size;
+}
+
+void Asteroid::setSize(int newsize) {
+	this->size = newsize;
 }

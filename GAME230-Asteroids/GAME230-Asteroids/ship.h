@@ -23,6 +23,7 @@ public:
 	float getCollisionRadius();
 	void setColor(Color color);
 	Vector2f getDirection();
+	void loseLife();
 private:
 	RectangleShape shape;
 	Vector2f size;
@@ -36,6 +37,8 @@ private:
 
 	float baseAcceleration;
 	float maxSpeed;
+
+	int lives;
 
 	void updateAngle(int dt_ms, bool left, bool right);
 	void updateDirection(); // uses angle
