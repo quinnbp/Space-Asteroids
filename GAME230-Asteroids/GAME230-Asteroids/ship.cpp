@@ -5,7 +5,7 @@ const float PI = 3.1415926535;
 Ship::Ship(Vector2f position, Vector2f velocity, int dimension, Texture* texture) {
 	// frame-updated traits for movement
 	this->position = position;
-	this->angle = 0.0f;
+	this->angle = -90.0f;
 	this->speed = 0.0f;
 	this->direction = Vector2f(1, 0);
 
@@ -117,7 +117,7 @@ void Ship::updatePosition(int dt_ms, int windowWidth, int windowHeight) {
 }
 
 void Ship::loseLife() {
-	this->lives--;
+
 }
 
 void Ship::setAcceleration(float newacc) {
@@ -140,6 +140,6 @@ Vector2f Ship::getDirection() {
 	return this->direction;
 }
 
-float getRadius();
-Vector2f getVelocity();
-void setVelocity(Vector2f newvel);
+void Ship::setPosition(Vector2f newpos) {
+	this->position = newpos;
+}

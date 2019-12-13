@@ -24,7 +24,7 @@ const int asteroidStartRadius = 30;
 
 const float PI = 3.1415926535;
 
-enum { MENU, GAMEPLAY, DEAD };
+enum { MENU, GAMEPLAY, GAMEPREP, DEAD };
 
 /*
 	Returns the pythagorean distance between two points
@@ -62,6 +62,16 @@ int main() {
 	}
 	asteroidTexture.setSmooth(true);
 
+	Texture gameBg;
+	if (!gameBg.loadFromFile("spacebg2.png")) {
+		exit(-1);
+	}
+
+	Texture menuBg;
+	if (!menuBg.loadFromFile("spacebg.png")) {
+		exit(-1);
+	}
+
 	Font arial;
 	if (!arial.loadFromFile("arial.ttf")) {
 		exit(-1);
@@ -71,6 +81,48 @@ int main() {
 	if (!spaceFont.loadFromFile("spacefont.otf")) {
 		exit(-1);
 	}
+
+	RectangleShape menuBgImage = RectangleShape(Vector2f(WINDOW_WIDTH, WINDOW_HEIGHT));
+	menuBgImage.setPosition(Vector2f(0, 0));
+	menuBgImage.setTexture(&menuBg);
+
+	RectangleShape gameBgImage = RectangleShape(Vector2f(WINDOW_WIDTH, WINDOW_HEIGHT));
+	gameBgImage.setPosition(Vector2f(0, 0));
+	gameBgImage.setTexture(&gameBg);
+
+	RectangleShape midline = RectangleShape(Vector2f(4.0f, WINDOW_HEIGHT));
+	midline.setPosition(Vector2f(WINDOW_WIDTH / 2.0f - 2.0f, 0));
+	RectangleShape midline2 = RectangleShape(Vector2f(WINDOW_WIDTH, 4.0f));
+	midline2.setPosition(Vector2f(0, WINDOW_HEIGHT / 2.0f - 2.0f));
+
+	Text titleText;
+	titleText.setFont(spaceFont);
+	titleText.setString("Space Asteroids");
+	titleText.setRotation(5.0f);
+	titleText.setCharacterSize(50);
+	Text titleTextShadow = titleText;
+	titleText.setPosition(Vector2f(WINDOW_WIDTH / 2.0f - 290, WINDOW_HEIGHT / 2.0f - 200.0f));
+	titleTextShadow.setPosition(Vector2f(WINDOW_WIDTH / 2.0f - 294.0f, WINDOW_HEIGHT / 2.0f - 204.0f));
+	titleTextShadow.setFillColor(Color::Red);
+	
+	Text playText;
+	playText.setFont(spaceFont);
+	playText.setPosition(Vector2f(WINDOW_WIDTH / 2.0f - 250.0f, WINDOW_HEIGHT / 2.0f));
+	playText.setRotation(-5.0f);
+	Text spaceText = playText;
+	spaceText.setFillColor(Color::Red);
+	playText.setString("press       to play");
+	spaceText.setString("      space");
+
+	Text gameOverText = titleText;
+	Text returnToMenuText = playText;
+	gameOverText.setString("game over");
+	returnToMenuText.setString("press space to \nreturn to menu");
+
+	Text authorText;
+	authorText.setFont(spaceFont);
+	authorText.setPosition(20, WINDOW_HEIGHT - 50.0f);
+	authorText.setString("qbp");
 
 	Text livesText;
 	livesText.setFont(arial);
@@ -99,7 +151,7 @@ int main() {
 	bool space = false;
 
 	// state
-	int state = GAMEPLAY;
+	int state = MENU;
 
 	Ship ship = Ship(Vector2f(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f), Vector2f(0, 0), 20, &shipTexture);
 
@@ -163,7 +215,44 @@ int main() {
 		dt_ms = clock.getElapsedTime().asMilliseconds();
 		clock.restart();
 
-		if (state == GAMEPLAY) {
+		window.clear();
+		
+
+		if (state == MENU) {
+			window.draw(menuBgImage);
+			window.draw(titleTextShadow);
+			window.draw(titleText);
+			window.draw(playText);
+			window.draw(spaceText);
+			window.draw(authorText);
+			if (space) {
+				space = false;
+				state = GAMEPREP;
+			}
+		}
+		else if (state == GAMEPREP) {
+			state = GAMEPLAY;
+		}
+		else if (state == DEAD) {
+			window.draw(gameBgImage);
+			for (int i = 0; i < asteroids.size(); i++) {
+				if (asteroids[i]->isActive()) {
+					asteroids[i]->draw(&window);
+				}
+			}
+
+			window.draw(gameOverText);
+			window.draw(returnToMenuText);
+			window.draw(scoreText);
+			window.draw(scoreNumber);
+
+			if (space) {
+				space = false;
+				state = MENU;
+			}
+		}
+		else if (state == GAMEPLAY) {
+
 			// UPDATE
 			ship.update(dt_ms, WINDOW_WIDTH, WINDOW_HEIGHT, left, right, up);
 
@@ -203,7 +292,11 @@ int main() {
 					if (circlesCollided(a->getPosition(), ship.getPosition(), a->getRadius(), ship.getCollisionRadius())) {
 						a->setColor(Color::Red);
 						playerLives--;
-						// TODO: kill player
+						ship.loseLife();
+						ship.setPosition(Vector2f(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f));
+						if (playerLives <= 0) { // TODO: fix multi-collide
+							state = DEAD;
+						}
 					}
 
 					for (int i = 0; i < bullets.size(); i++) {
@@ -245,9 +338,9 @@ int main() {
 				}
 			}
 
-			window.clear();
+			// DRAW (GAMEPLAY)
+			window.draw(gameBgImage);
 
-			// DRAW
 			ship.draw(&window);
 			for (int i = 0; i < asteroids.size(); i++) {
 				if (asteroids[i]->isActive()) {
